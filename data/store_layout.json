@@ -1,0 +1,33 @@
+{
+  "store_id": "STORE_BLR_002",
+  "store_name": "Brigade Road Bangalore",
+  "open_hours": {"open": "10:00", "close": "22:00"},
+  "zones": [
+    {"zone_id": "ENTRY_EXIT", "camera_id": "CAM_ENTRY_03", "description": "Main entrance and exit threshold"},
+    {"zone_id": "SKINCARE", "camera_id": "CAM_FLOOR_01", "description": "Korean skincare, The Face Shop, Good Vibes, DermDoc, Minimalist, Aquaologica"},
+    {"zone_id": "MAKEUP", "camera_id": "CAM_FLOOR_02", "description": "Makeup wall: Lakme, Faces Canada, Maybelline, Swiss Beauty, L'Oreal, Alps"},
+    {"zone_id": "HAIRCARE", "camera_id": "CAM_FLOOR_01", "description": "Alps hair, hair accessories zone"},
+    {"zone_id": "BILLING", "camera_id": "CAM_BILLING_05", "description": "Billing counter, POS terminal"},
+    {"zone_id": "STOCKROOM", "camera_id": "CAM_BACK_04", "description": "Staff only - back room, stockroom"}
+  ],
+  "camera_mapping": {
+    "CAM_FLOOR_01": "CAM_1.mp4",
+    "CAM_FLOOR_02": "CAM_2.mp4",
+    "CAM_ENTRY_03": "CAM_3.mp4",
+    "CAM_BACK_04": "CAM_4.mp4",
+    "CAM_BILLING_05": "CAM_5.mp4"
+  },
+  "camera_zones": {
+    "CAM_FLOOR_01": ["SKINCARE", "HAIRCARE"],
+    "CAM_FLOOR_02": ["MAKEUP"],
+    "CAM_ENTRY_03": ["ENTRY_EXIT"],
+    "CAM_BACK_04": ["STOCKROOM"],
+    "CAM_BILLING_05": ["BILLING"]
+  },
+  "tripwire": {
+    "CAM_ENTRY_03": {"y": 540, "direction_entry": "up"}
+  },
+  "billing_zone": {
+    "CAM_BILLING_05": {"x1": 0.15, "y1": 0.25, "x2": 0.85, "y2": 0.75}
+  }
+}

@@ -1,0 +1,6 @@
+[run]
+omit =
+    pipeline/detect.py
+    app/bootstrap.py
+    app/replay.py
+

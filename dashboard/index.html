@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purplle Store Intelligence</title>
+  <style>
+    :root {
+      --purple: #6b2d8b;
+      --purple-light: #9b4dca;
+      --bg: #0f0a14;
+      --card: #1a1224;
+      --text: #f5eef8;
+      --muted: #a89bb3;
+      --green: #2ecc71;
+      --yellow: #f1c40f;
+      --red: #e74c3c;
+      --info: #3498db;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    header {
+      border-bottom: 2px solid var(--purple);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    header h1 { font-size: 1.5rem; color: var(--purple-light); }
+    header p { color: var(--muted); margin-top: 0.25rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      border: 1px solid #2a1f35;
+    }
+    .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+    .card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.35rem; }
+    section { margin-bottom: 1.5rem; }
+    section h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--purple-light); }
+    .funnel { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end; }
+    .funnel-stage {
+      flex: 1;
+      min-width: 120px;
+      background: var(--card);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .funnel-bar {
+      height: 8px;
+      background: var(--purple);
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+    .heatmap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+    .zone-box {
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: background 0.5s;
+    }
+    .anomalies { display: flex; flex-direction: column; gap: 0.5rem; }
+    .anomaly {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--info);
+    }
+    .anomaly.WARN { border-left-color: var(--yellow); }
+    .anomaly.CRITICAL { border-left-color: var(--red); }
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .badge.INFO { background: var(--info); color: #fff; }
+    .badge.WARN { background: var(--yellow); color: #000; }
+    .badge.CRITICAL { background: var(--red); color: #fff; }
+    footer {
+      margin-top: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .error { color: var(--red); padding: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Purplle Store Intelligence — Brigade Road, Bangalore</h1>
+    <p>10 April 2026 · Brigade Road, Bangalore · STORE_BLR_002</p>
+  </header>
+
+  <div class="grid" id="metrics-cards">
+    <div class="card"><div class="label">Total Visitors Today</div><div class="value" id="visitors">—</div></div>
+    <div class="card"><div class="label">Conversion Rate</div><div class="value" id="conversion">—</div></div>
+    <div class="card"><div class="label">Avg Dwell (ms)</div><div class="value" id="dwell">—</div></div>
+    <div class="card"><div class="label">Queue Depth</div><div class="value" id="queue">—</div></div>
+  </div>
+
+  <section>
+    <h2>Conversion Funnel</h2>
+    <div class="funnel" id="funnel"></div>
+  </section>
+
+  <section>
+    <h2>Zone Heatmap</h2>
+    <div class="heatmap" id="heatmap"></div>
+  </section>
+
+  <section>
+    <h2>Anomaly Alerts</h2>
+    <div class="anomalies" id="anomalies"><p class="muted">No active anomalies</p></div>
+  </section>
+
+  <footer>Last updated: <span id="updated">—</span></footer>
+
+  <script>
+    const STORE_ID = "STORE_BLR_002";
+    const API_BASE = (window.API_BASE || "http://localhost:8080");
+
+    function zoneColor(intensity) {
+      const t = Math.min(100, Math.max(0, intensity)) / 100;
+      const r = Math.round(46 + t * (231 - 46));
+      const g = Math.round(204 - t * (204 - 76));
+      const b = Math.round(113 - t * (113 - 60));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    async function fetchJson(path) {
+      const res = await fetch(`${API_BASE}${path}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function avgDwell(obj) {
+      const vals = Object.values(obj || {});
+      if (!vals.length) return 0;
+      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    }
+
+    async function refresh() {
+      try {
+        const [metrics, funnel, heatmap, anomalies] = await Promise.all([
+          fetchJson(`/stores/${STORE_ID}/metrics`),
+          fetchJson(`/stores/${STORE_ID}/funnel`),
+          fetchJson(`/stores/${STORE_ID}/heatmap`),
+          fetchJson(`/stores/${STORE_ID}/anomalies`),
+        ]);
+
+        document.getElementById("visitors").textContent = metrics.unique_visitors;
+        document.getElementById("conversion").textContent =
+          (metrics.conversion_rate * 100).toFixed(1) + "%";
+        document.getElementById("dwell").textContent = avgDwell(metrics.avg_dwell_per_zone);
+        document.getElementById("queue").textContent = metrics.queue_depth;
+
+        const funnelEl = document.getElementById("funnel");
+        funnelEl.innerHTML = "";
+        const maxCount = Math.max(...funnel.stages.map(s => s.count), 1);
+        funnel.stages.forEach(s => {
+          const pct = Math.round((s.count / maxCount) * 100);
+          const div = document.createElement("div");
+          div.className = "funnel-stage";
+          div.innerHTML = `
+            <div>${s.stage}</div>
+            <div class="value" style="font-size:1.25rem">${s.count}</div>
+            <div style="font-size:0.7rem;color:var(--muted)">Drop-off ${s.drop_off_pct}%</div>
+            <div class="funnel-bar" style="width:${pct}%"></div>
+          `;
+          funnelEl.appendChild(div);
+        });
+
+        const hmEl = document.getElementById("heatmap");
+        hmEl.innerHTML = "";
+        heatmap.zones.forEach(z => {
+          const box = document.createElement("div");
+          box.className = "zone-box";
+          box.style.background = zoneColor(z.intensity);
+          box.style.color = z.intensity > 50 ? "#fff" : "#1a1224";
+          box.textContent = `${z.zone_id} (${z.visit_frequency})`;
+          hmEl.appendChild(box);
+        });
+
+        const anEl = document.getElementById("anomalies");
+        if (!anomalies.anomalies.length) {
+          anEl.innerHTML = "<p style='color:var(--muted)'>No active anomalies</p>";
+        } else {
+          anEl.innerHTML = "";
+          anomalies.anomalies.forEach(a => {
+            const div = document.createElement("div");
+            div.className = `anomaly ${a.severity}`;
+            div.innerHTML = `
+              <div>
+                <strong>${a.anomaly_type}</strong><br/>
+                <span style="font-size:0.85rem;color:var(--muted)">${a.message}</span>
+              </div>
+              <span class="badge ${a.severity}">${a.severity}</span>
+            `;
+            anEl.appendChild(div);
+          });
+        }
+
+        document.getElementById("updated").textContent = new Date().toLocaleString();
+      } catch (e) {
+        console.error(e);
+        document.getElementById("updated").textContent =
+          "Error: " + e.message + " (is API running on :8080?)";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
