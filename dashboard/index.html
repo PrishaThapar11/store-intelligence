@@ -138,7 +138,7 @@
 
   <script>
     const STORE_ID = "STORE_BLR_002";
-    const API_BASE = (window.API_BASE || "http://localhost:8080");
+    const API_BASE = (window.API_BASE || `${window.location.protocol}//${window.location.hostname}:8000`);
 
     function zoneColor(intensity) {
       const t = Math.min(100, Math.max(0, intensity)) / 100;
@@ -225,7 +225,7 @@
       } catch (e) {
         console.error(e);
         document.getElementById("updated").textContent =
-          "Error: " + e.message + " (is API running on :8080?)";
+          "Error: " + e.message + " (is API running on :8000?)";
       }
     }
 
