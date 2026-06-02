@@ -70,11 +70,7 @@ store-intelligence/
 | `REPLAY_SPEED` | `10` | Replay multiplier |
 | `SKIP_BOOTSTRAP` | `false` | Skip demo seed |
 
-## Submission Checklist
 
-**Include in GitHub:** all code, `docs/`, `data/store_layout.json`, `data/sample_events.jsonl`, Dockerfile, compose file.
-
-**Do NOT commit:** `data/videos/*.mp4`, `Brigade_Bangalore_10_April_26.csv`, `data/store_intelligence.db`, `data/events.jsonl`.
 
 ## License
 
